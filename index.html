@@ -1,0 +1,1087 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Area Guide - Rental Bot</title>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-dark: #1a1a2e;
+            --bg-card: #16213e;
+            --bg-hover: #0f3460;
+            --text-primary: #eaeaea;
+            --text-secondary: #b0b0b0;
+            --accent-primary: #00d4ff;
+            --accent-secondary: #ff006e;
+            --safe: #22c55e;
+            --moderate: #eab308;
+            --unsafe: #ef4444;
+            --border: #2a2a4e;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-dark) 100%);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 1.5rem;
+            z-index: 100;
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            max-width: 1800px;
+            margin: 0 auto;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .header-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .header-title span {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .city-toggle {
+            display: flex;
+            gap: 0.5rem;
+            background: var(--bg-dark);
+            padding: 0.5rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .city-btn {
+            padding: 0.6rem 1.2rem;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: 6px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            font-size: 0.95rem;
+        }
+
+        .city-btn:hover {
+            color: var(--text-primary);
+            background: var(--bg-hover);
+        }
+
+        .city-btn.active {
+            background: var(--accent-primary);
+            color: var(--bg-dark);
+        }
+
+        .filter-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            padding: 0.6rem 1.2rem;
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-secondary);
+            transition: all 0.3s ease;
+        }
+
+        .filter-toggle:hover {
+            color: var(--text-primary);
+            border-color: var(--accent-primary);
+        }
+
+        .filter-toggle input {
+            cursor: pointer;
+            width: 18px;
+            height: 18px;
+        }
+
+        /* Main Content */
+        .main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            gap: 1px;
+            background: var(--border);
+        }
+
+        /* Map */
+        #map {
+            flex: 1;
+            min-height: 0;
+        }
+
+        .leaflet-popup-content-wrapper {
+            background: var(--bg-card) !important;
+            border: 1px solid var(--border) !important;
+            border-radius: 8px !important;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
+        }
+
+        .leaflet-popup-content {
+            color: var(--text-primary) !important;
+            font-size: 0.9rem;
+        }
+
+        .leaflet-popup-tip {
+            background: var(--bg-card) !important;
+            border: 1px solid var(--border) !important;
+        }
+
+        .popup-content {
+            padding: 0.5rem 0;
+        }
+
+        .popup-content p {
+            margin: 0.4rem 0;
+            display: flex;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+
+        .popup-content strong {
+            color: var(--accent-primary);
+        }
+
+        .popup-safety {
+            margin-top: 0.6rem;
+            padding-top: 0.6rem;
+            border-top: 1px solid var(--border);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .leaflet-control-attribution {
+            background: rgba(26, 26, 46, 0.8) !important;
+            color: var(--text-secondary) !important;
+            border: 1px solid var(--border) !important;
+        }
+
+        .leaflet-control-attribution a {
+            color: var(--accent-primary) !important;
+        }
+
+        /* Side Panel */
+        .side-panel {
+            width: 40%;
+            background: var(--bg-card);
+            border-left: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+        }
+
+        .district-count {
+            font-size: 1.4rem;
+            color: var(--accent-primary);
+            margin-top: 0.3rem;
+        }
+
+        .panel-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+        }
+
+        /* Scrollbar styling */
+        .panel-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .panel-content::-webkit-scrollbar-track {
+            background: var(--bg-dark);
+        }
+
+        .panel-content::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+
+        .panel-content::-webkit-scrollbar-thumb:hover {
+            background: var(--text-secondary);
+        }
+
+        /* Region Accordion */
+        .region-group {
+            margin-bottom: 1rem;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        .region-header {
+            padding: 0.9rem 1.2rem;
+            background: var(--bg-hover);
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .region-header:hover {
+            background: #0f3460cc;
+        }
+
+        .region-header.collapsed {
+            border-bottom: none;
+        }
+
+        .region-toggle {
+            transition: transform 0.3s ease;
+            font-size: 1.2rem;
+        }
+
+        .region-header.collapsed .region-toggle {
+            transform: rotate(90deg);
+        }
+
+        .region-districts {
+            background: var(--bg-dark);
+            max-height: 500px;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .region-header.collapsed ~ .region-districts {
+            max-height: 0;
+        }
+
+        .district-item {
+            padding: 0.8rem 1.2rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.2s ease;
+            cursor: pointer;
+        }
+
+        .district-item:last-child {
+            border-bottom: none;
+        }
+
+        .district-item:hover {
+            background: var(--bg-hover);
+        }
+
+        .district-item.hidden {
+            display: none;
+        }
+
+        .district-name {
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .district-badge {
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .badge-safe {
+            background: rgba(34, 197, 94, 0.2);
+            color: var(--safe);
+            border: 1px solid var(--safe);
+        }
+
+        .badge-moderate {
+            background: rgba(234, 179, 8, 0.2);
+            color: var(--moderate);
+            border: 1px solid var(--moderate);
+        }
+
+        .badge-unsafe {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--unsafe);
+            border: 1px solid var(--unsafe);
+        }
+
+        /* Legend */
+        .legend {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid var(--border);
+            background: var(--bg-hover);
+            font-size: 0.85rem;
+        }
+
+        .legend-title {
+            font-weight: 600;
+            margin-bottom: 0.6rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid var(--text-primary);
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 1024px) {
+            .main-content {
+                flex-direction: column;
+            }
+
+            .side-panel {
+                width: 100%;
+                height: 40%;
+                border-left: none;
+                border-top: 1px solid var(--border);
+            }
+
+            #map {
+                height: 60%;
+            }
+
+            .header-content {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .city-toggle, .filter-toggle {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .city-btn {
+                flex: 1;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .header {
+                padding: 0.8rem 1rem;
+            }
+
+            .header-title {
+                font-size: 1.2rem;
+            }
+
+            .panel-header {
+                padding: 0.8rem 1rem;
+                font-size: 0.8rem;
+            }
+
+            .region-header {
+                padding: 0.8rem 1rem;
+                font-size: 0.9rem;
+            }
+
+            .district-item {
+                padding: 0.6rem 1rem;
+                font-size: 0.85rem;
+            }
+
+            .district-badge {
+                padding: 0.25rem 0.6rem;
+                font-size: 0.75rem;
+            }
+
+            .legend {
+                padding: 0.8rem 1rem;
+                font-size: 0.8rem;
+            }
+        }
+
+        /* Loading state */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-secondary);
+        }
+
+        /* No data state */
+        .empty-state {
+            padding: 2rem 1rem;
+            text-align: center;
+            color: var(--text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-content">
+                <div class="header-title">
+                    📍 <span>Area Guide</span>
+                </div>
+                <div class="city-toggle">
+                    <button class="city-btn active" data-city="cape-town">Cape Town</button>
+                    <button class="city-btn" data-city="johannesburg">Johannesburg</button>
+                </div>
+                <label class="filter-toggle">
+                    <input type="checkbox" id="safeFilter">
+                    <span>Show Safe Only</span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Map -->
+            <div id="map"></div>
+
+            <!-- Side Panel -->
+            <div class="side-panel">
+                <div class="panel-header">
+                    Neighborhoods
+                    <div class="district-count" id="districtCount">0 districts</div>
+                </div>
+                <div class="panel-content" id="panelContent">
+                    <div class="loading">Loading districts...</div>
+                </div>
+                <div class="legend">
+                    <div class="legend-title">Safety Scale</div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: var(--safe);"></div>
+                        <span>Safe (CT ≥6, JHB ≥5)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: var(--moderate);"></div>
+                        <span>Moderate (5-6 CT, 4 JHB)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: var(--unsafe);"></div>
+                        <span>Caution (CT <5, JHB <4)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+
+    <script>
+        // Data Structure
+        const cities = {
+            'cape-town': {
+                name: 'Cape Town',
+                center: [-33.9249, 18.4241],
+                zoom: 11,
+                safeThreshold: 6,
+                regions: {
+                    'atlantic_seaboard': {
+                        name: 'Atlantic Seaboard',
+                        emoji: '🏖',
+                        districts: [
+                            { name: 'Sea Point', lat: -33.9173, lng: 18.3868, score: 8 },
+                            { name: 'Green Point', lat: -33.906, lng: 18.399, score: 8 },
+                            { name: 'Mouille Point', lat: -33.901, lng: 18.403, score: 8 },
+                            { name: 'Three Anchor Bay', lat: -33.911, lng: 18.394, score: 8 },
+                            { name: 'Fresnaye', lat: -33.922, lng: 18.383, score: 9 },
+                            { name: 'Bantry Bay', lat: -33.925, lng: 18.381, score: 9 },
+                            { name: 'Clifton', lat: -33.939, lng: 18.373, score: 9 },
+                            { name: 'Camps Bay', lat: -33.9506, lng: 18.3777, score: 8 },
+                            { name: 'Bakoven', lat: -33.956, lng: 18.374, score: 8 },
+                            { name: 'Llandudno', lat: -33.982, lng: 18.353, score: 8 },
+                            { name: 'Hout Bay', lat: -34.043, lng: 18.354, score: 7 }
+                        ]
+                    },
+                    'city_bowl': {
+                        name: 'City Bowl',
+                        emoji: '🏙',
+                        districts: [
+                            { name: 'CBD', lat: -33.9249, lng: 18.4241, score: 6 },
+                            { name: 'Gardens', lat: -33.934, lng: 18.415, score: 7 },
+                            { name: 'Tamboerskloof', lat: -33.931, lng: 18.408, score: 7 },
+                            { name: 'Oranjezicht', lat: -33.937, lng: 18.407, score: 7 },
+                            { name: 'Vredehoek', lat: -33.938, lng: 18.413, score: 7 },
+                            { name: 'Higgovale', lat: -33.941, lng: 18.405, score: 7 },
+                            { name: 'De Waterkant', lat: -33.915, lng: 18.417, score: 7 },
+                            { name: 'Bo-Kaap', lat: -33.92, lng: 18.414, score: 6 },
+                            { name: 'Foreshore', lat: -33.918, lng: 18.429, score: 6 },
+                            { name: 'Zonnebloem', lat: -33.935, lng: 18.428, score: 5 },
+                            { name: 'Walmer Estate', lat: -33.938, lng: 18.435, score: 5 }
+                        ]
+                    },
+                    'southern_suburbs': {
+                        name: 'Southern Suburbs',
+                        emoji: '🌿',
+                        districts: [
+                            { name: 'Woodstock', lat: -33.926, lng: 18.449, score: 5 },
+                            { name: 'Salt River', lat: -33.93, lng: 18.46, score: 4 },
+                            { name: 'Observatory', lat: -33.937, lng: 18.471, score: 6 },
+                            { name: 'Mowbray', lat: -33.948, lng: 18.473, score: 6 },
+                            { name: 'Rosebank', lat: -33.957, lng: 18.472, score: 6 },
+                            { name: 'Rondebosch', lat: -33.968, lng: 18.473, score: 9 },
+                            { name: 'Newlands', lat: -33.979, lng: 18.457, score: 8 },
+                            { name: 'Claremont', lat: -33.986, lng: 18.464, score: 7 },
+                            { name: 'Kenilworth', lat: -33.997, lng: 18.473, score: 7 },
+                            { name: 'Wynberg', lat: -34.007, lng: 18.469, score: 6 },
+                            { name: 'Plumstead', lat: -34.016, lng: 18.47, score: 6 },
+                            { name: 'Diep River', lat: -34.025, lng: 18.465, score: 6 },
+                            { name: 'Bergvliet', lat: -34.035, lng: 18.453, score: 7 },
+                            { name: 'Bishopscourt', lat: -33.996, lng: 18.452, score: 8 },
+                            { name: 'Constantia', lat: -34.023, lng: 18.428, score: 8 },
+                            { name: 'Tokai', lat: -34.057, lng: 18.438, score: 7 },
+                            { name: 'Meadowridge', lat: -34.034, lng: 18.468, score: 6 },
+                            { name: 'Pinelands', lat: -33.936, lng: 18.507, score: 7 },
+                            { name: 'Thornton', lat: -33.913, lng: 18.545, score: 5 },
+                            { name: 'Lansdowne', lat: -34.003, lng: 18.502, score: 5 }
+                        ]
+                    },
+                    'south_peninsula': {
+                        name: 'False Bay / South Peninsula',
+                        emoji: '🌊',
+                        districts: [
+                            { name: 'Muizenberg', lat: -34.108, lng: 18.472, score: 7 },
+                            { name: 'St James', lat: -34.118, lng: 18.46, score: 7 },
+                            { name: 'Kalk Bay', lat: -34.128, lng: 18.449, score: 8 },
+                            { name: 'Clovelly', lat: -34.133, lng: 18.439, score: 7 },
+                            { name: 'Fish Hoek', lat: -34.137, lng: 18.433, score: 7 },
+                            { name: 'Glencairn', lat: -34.156, lng: 18.429, score: 7 },
+                            { name: 'Simons Town', lat: -34.192, lng: 18.432, score: 8 },
+                            { name: 'Noordhoek', lat: -34.105, lng: 18.372, score: 7 },
+                            { name: 'Kommetjie', lat: -34.138, lng: 18.328, score: 7 },
+                            { name: 'Scarborough', lat: -34.197, lng: 18.367, score: 6 },
+                            { name: 'Sun Valley', lat: -34.102, lng: 18.391, score: 6 },
+                            { name: 'Lakeside', lat: -34.086, lng: 18.457, score: 6 }
+                        ]
+                    },
+                    'west_coast': {
+                        name: 'West Coast / Blouberg',
+                        emoji: '🏄',
+                        districts: [
+                            { name: 'Bloubergstrand', lat: -33.805, lng: 18.457, score: 6 },
+                            { name: 'Big Bay', lat: -33.793, lng: 18.453, score: 7 },
+                            { name: 'Table View', lat: -33.825, lng: 18.51, score: 6 },
+                            { name: 'West Beach', lat: -33.81, lng: 18.485, score: 6 },
+                            { name: 'Parklands', lat: -33.819, lng: 18.519, score: 6 },
+                            { name: 'Sunningdale', lat: -33.807, lng: 18.525, score: 7 },
+                            { name: 'Milnerton', lat: -33.866, lng: 18.513, score: 6 },
+                            { name: 'Rugby', lat: -33.853, lng: 18.508, score: 5 },
+                            { name: 'Brooklyn', lat: -33.873, lng: 18.506, score: 5 }
+                        ]
+                    },
+                    'northern_suburbs': {
+                        name: 'Northern Suburbs',
+                        emoji: '🏡',
+                        districts: [
+                            { name: 'Century City', lat: -33.889, lng: 18.511, score: 8 },
+                            { name: 'Edgemead', lat: -33.868, lng: 18.547, score: 6 },
+                            { name: 'Bothasig', lat: -33.857, lng: 18.542, score: 5 },
+                            { name: 'Monte Vista', lat: -33.877, lng: 18.568, score: 6 },
+                            { name: 'Goodwood', lat: -33.896, lng: 18.553, score: 5 },
+                            { name: 'Parow', lat: -33.903, lng: 18.587, score: 5 },
+                            { name: 'Bellville', lat: -33.898, lng: 18.629, score: 5 },
+                            { name: 'Tyger Valley', lat: -33.871, lng: 18.624, score: 7 },
+                            { name: 'Durbanville', lat: -33.831, lng: 18.649, score: 7 },
+                            { name: 'Brackenfell', lat: -33.862, lng: 18.69, score: 6 },
+                            { name: 'Kraaifontein', lat: -33.851, lng: 18.723, score: 5 },
+                            { name: 'Plattekloof', lat: -33.858, lng: 18.577, score: 7 },
+                            { name: 'Panorama', lat: -33.873, lng: 18.585, score: 7 },
+                            { name: 'Richwood', lat: -33.862, lng: 18.554, score: 6 },
+                            { name: 'Welgemoed', lat: -33.877, lng: 18.601, score: 7 },
+                            { name: 'Kuilsrivier', lat: -34.005, lng: 18.675, score: 5 }
+                        ]
+                    },
+                    'helderberg': {
+                        name: 'Helderberg / Winelands',
+                        emoji: '🍷',
+                        districts: [
+                            { name: 'Somerset West', lat: -34.078, lng: 18.851, score: 7 },
+                            { name: 'Strand', lat: -34.112, lng: 18.827, score: 6 },
+                            { name: 'Gordons Bay', lat: -34.161, lng: 18.862, score: 6 },
+                            { name: 'Stellenbosch', lat: -33.932, lng: 18.86, score: 7 },
+                            { name: 'Franschhoek', lat: -33.91, lng: 19.117, score: 7 },
+                            { name: 'Paarl', lat: -33.731, lng: 18.962, score: 6 }
+                        ]
+                    },
+                    'cape_flats': {
+                        name: 'Cape Flats / Mitchells Plain',
+                        emoji: '📍',
+                        districts: [
+                            { name: 'Athlone', lat: -33.964, lng: 18.504, score: 4 },
+                            { name: 'Rondebosch East', lat: -33.963, lng: 18.487, score: 5 },
+                            { name: 'Crawford', lat: -33.972, lng: 18.509, score: 5 },
+                            { name: 'Grassy Park', lat: -34.034, lng: 18.503, score: 4 },
+                            { name: 'Retreat', lat: -34.058, lng: 18.477, score: 5 },
+                            { name: 'Ottery', lat: -34.018, lng: 18.514, score: 4 },
+                            { name: 'Mitchells Plain', lat: -34.041, lng: 18.619, score: 3 },
+                            { name: 'Lentegeur', lat: -34.053, lng: 18.636, score: 3 }
+                        ]
+                    }
+                }
+            },
+            'johannesburg': {
+                name: 'Johannesburg',
+                center: [-26.1445, 28.0416],
+                zoom: 11,
+                safeThreshold: 5,
+                regions: {
+                    'sandton': {
+                        name: 'Sandton',
+                        emoji: '🏙',
+                        districts: [
+                            { name: 'Sandton Central', lat: -26.1076, lng: 28.0567, score: 7 },
+                            { name: 'Sandhurst', lat: -26.112, lng: 28.048, score: 8 },
+                            { name: 'Bryanston', lat: -26.063, lng: 28.02, score: 7 },
+                            { name: 'Rivonia', lat: -26.057, lng: 28.061, score: 7 },
+                            { name: 'Sunninghill', lat: -26.034, lng: 28.06, score: 7 },
+                            { name: 'Lonehill', lat: -26.026, lng: 28.029, score: 7 },
+                            { name: 'Benmore', lat: -26.097, lng: 28.038, score: 7 },
+                            { name: 'Morningside', lat: -26.104, lng: 28.069, score: 7 },
+                            { name: 'Strathavon', lat: -26.085, lng: 28.069, score: 7 },
+                            { name: 'Atholl', lat: -26.114, lng: 28.057, score: 8 },
+                            { name: 'Hurlingham', lat: -26.128, lng: 28.046, score: 7 },
+                            { name: 'Illovo', lat: -26.131, lng: 28.051, score: 7 }
+                        ]
+                    },
+                    'rosebank_parktown': {
+                        name: 'Rosebank / Parktown',
+                        emoji: '🌳',
+                        districts: [
+                            { name: 'Rosebank', lat: -26.1452, lng: 28.0436, score: 7 },
+                            { name: 'Parktown', lat: -26.172, lng: 28.038, score: 6 },
+                            { name: 'Parkview', lat: -26.162, lng: 28.021, score: 7 },
+                            { name: 'Westcliff', lat: -26.166, lng: 28.028, score: 8 },
+                            { name: 'Houghton', lat: -26.157, lng: 28.051, score: 8 },
+                            { name: 'Saxonwold', lat: -26.153, lng: 28.041, score: 8 },
+                            { name: 'Killarney', lat: -26.148, lng: 28.035, score: 7 },
+                            { name: 'Craighall', lat: -26.128, lng: 28.025, score: 7 },
+                            { name: 'Craighall Park', lat: -26.123, lng: 28.018, score: 7 },
+                            { name: 'Dunkeld', lat: -26.136, lng: 28.031, score: 7 },
+                            { name: 'Dunkeld West', lat: -26.134, lng: 28.021, score: 7 },
+                            { name: 'Hyde Park', lat: -26.119, lng: 28.038, score: 8 }
+                        ]
+                    },
+                    'northern_jhb': {
+                        name: 'Northern Suburbs',
+                        emoji: '🏡',
+                        districts: [
+                            { name: 'Parkhurst', lat: -26.144, lng: 28.017, score: 7 },
+                            { name: 'Greenside', lat: -26.15, lng: 28.01, score: 6 },
+                            { name: 'Emmarentia', lat: -26.154, lng: 28.005, score: 7 },
+                            { name: 'Linden', lat: -26.131, lng: 27.996, score: 6 },
+                            { name: 'Northcliff', lat: -26.131, lng: 27.976, score: 7 },
+                            { name: 'Blairgowrie', lat: -26.11, lng: 28.002, score: 6 },
+                            { name: 'Fairland', lat: -26.123, lng: 27.979, score: 6 },
+                            { name: 'Robin Hills', lat: -26.119, lng: 27.968, score: 6 },
+                            { name: 'Blackheath', lat: -26.106, lng: 28.011, score: 6 },
+                            { name: 'Bordeaux', lat: -26.11, lng: 28.009, score: 6 }
+                        ]
+                    },
+                    'melville': {
+                        name: 'Melville / Auckland Park',
+                        emoji: '🎨',
+                        districts: [
+                            { name: 'Melville', lat: -26.177, lng: 27.998, score: 5 },
+                            { name: 'Auckland Park', lat: -26.183, lng: 28.008, score: 5 },
+                            { name: 'Westdene', lat: -26.171, lng: 28.001, score: 5 },
+                            { name: 'Brixton', lat: -26.186, lng: 28.003, score: 4 },
+                            { name: 'Richmond', lat: -26.18, lng: 28.015, score: 4 }
+                        ]
+                    },
+                    'fourways': {
+                        name: 'Fourways / Dainfern',
+                        emoji: '🏘',
+                        districts: [
+                            { name: 'Fourways', lat: -26.023, lng: 28.007, score: 7 },
+                            { name: 'Fourways Gardens', lat: -26.032, lng: 28.001, score: 7 },
+                            { name: 'Dainfern', lat: -26.001, lng: 28.003, score: 8 },
+                            { name: 'Cedar Lakes', lat: -26.009, lng: 28.012, score: 7 },
+                            { name: 'Broadacres', lat: -26.01, lng: 27.996, score: 7 },
+                            { name: 'Pineslopes', lat: -26.023, lng: 28.02, score: 7 },
+                            { name: 'Douglasdale', lat: -26.035, lng: 28.018, score: 7 },
+                            { name: 'Magaliessig', lat: -26.046, lng: 28.009, score: 7 },
+                            { name: 'Chartwell', lat: -25.99, lng: 28.01, score: 7 }
+                        ]
+                    },
+                    'randburg': {
+                        name: 'Randburg / Ferndale',
+                        emoji: '🏢',
+                        districts: [
+                            { name: 'Randburg', lat: -26.094, lng: 28.003, score: 5 },
+                            { name: 'Ferndale', lat: -26.083, lng: 28.007, score: 6 },
+                            { name: 'Fontainebleau', lat: -26.099, lng: 27.982, score: 6 },
+                            { name: 'Northgate', lat: -26.079, lng: 27.963, score: 5 },
+                            { name: 'Strijdom Park', lat: -26.087, lng: 27.971, score: 5 },
+                            { name: 'Kya Sand', lat: -26.041, lng: 27.972, score: 4 },
+                            { name: 'Olivedale', lat: -26.064, lng: 28.002, score: 6 },
+                            { name: 'Bromhof', lat: -26.07, lng: 27.987, score: 6 }
+                        ]
+                    },
+                    'midrand': {
+                        name: 'Midrand',
+                        emoji: '🚆',
+                        districts: [
+                            { name: 'Midrand', lat: -25.991, lng: 28.127, score: 6 },
+                            { name: 'Carlswald', lat: -26.005, lng: 28.122, score: 6 },
+                            { name: 'Halfway House', lat: -25.987, lng: 28.113, score: 5 },
+                            { name: 'Waterfall', lat: -26.012, lng: 28.105, score: 7 },
+                            { name: 'Kyalami', lat: -25.987, lng: 28.074, score: 7 },
+                            { name: 'Vorna Valley', lat: -25.999, lng: 28.108, score: 6 },
+                            { name: 'Glen Austin', lat: -25.975, lng: 28.131, score: 6 },
+                            { name: 'Blue Hills', lat: -25.962, lng: 28.099, score: 6 }
+                        ]
+                    },
+                    'eastern_jhb': {
+                        name: 'Eastern Suburbs',
+                        emoji: '🌄',
+                        districts: [
+                            { name: 'Bedfordview', lat: -26.182, lng: 28.128, score: 7 },
+                            { name: 'Edenvale', lat: -26.141, lng: 28.153, score: 6 },
+                            { name: 'Greenstone Hill', lat: -26.141, lng: 28.139, score: 7 },
+                            { name: 'Modderfontein', lat: -26.097, lng: 28.162, score: 7 },
+                            { name: 'Kempton Park', lat: -26.104, lng: 28.235, score: 5 },
+                            { name: 'Glen Marais', lat: -26.106, lng: 28.209, score: 5 },
+                            { name: 'Germiston', lat: -26.217, lng: 28.168, score: 4 }
+                        ]
+                    },
+                    'western_jhb': {
+                        name: 'Roodepoort / West',
+                        emoji: '🏔',
+                        districts: [
+                            { name: 'Roodepoort', lat: -26.162, lng: 27.873, score: 5 },
+                            { name: 'Florida', lat: -26.172, lng: 27.914, score: 4 },
+                            { name: 'Honeydew', lat: -26.08, lng: 27.933, score: 6 },
+                            { name: 'Constantia Kloof', lat: -26.144, lng: 27.905, score: 6 },
+                            { name: 'Ruimsig', lat: -26.086, lng: 27.864, score: 7 },
+                            { name: 'Wilgeheuwel', lat: -26.071, lng: 27.902, score: 6 },
+                            { name: 'Strubensvalley', lat: -26.128, lng: 27.899, score: 5 },
+                            { name: 'Little Falls', lat: -26.113, lng: 27.87, score: 6 }
+                        ]
+                    },
+                    'central_jhb': {
+                        name: 'Central / Inner City',
+                        emoji: '🏗',
+                        districts: [
+                            { name: 'Braamfontein', lat: -26.194, lng: 28.036, score: 4 },
+                            { name: 'Maboneng', lat: -26.202, lng: 28.057, score: 4 },
+                            { name: 'Newtown', lat: -26.201, lng: 28.029, score: 4 },
+                            { name: 'Marshalltown', lat: -26.208, lng: 28.044, score: 3 },
+                            { name: 'Jeppestown', lat: -26.204, lng: 28.062, score: 3 },
+                            { name: 'Fordsburg', lat: -26.204, lng: 28.02, score: 3 },
+                            { name: 'Hillbrow', lat: -26.189, lng: 28.049, score: 2 }
+                        ]
+                    },
+                    'southern_jhb': {
+                        name: 'Southern Suburbs',
+                        emoji: '🌿',
+                        districts: [
+                            { name: 'Mondeor', lat: -26.269, lng: 28.026, score: 5 },
+                            { name: 'Glenvista', lat: -26.275, lng: 28.055, score: 6 },
+                            { name: 'Bassonia', lat: -26.261, lng: 28.071, score: 7 },
+                            { name: 'Meyersdal', lat: -26.282, lng: 28.096, score: 6 },
+                            { name: 'Kibler Park', lat: -26.301, lng: 28.042, score: 5 },
+                            { name: 'Winchester Hills', lat: -26.283, lng: 28.017, score: 5 },
+                            { name: 'Alberton', lat: -26.261, lng: 28.122, score: 5 },
+                            { name: 'Brackenhurst', lat: -26.293, lng: 28.124, score: 5 }
+                        ]
+                    },
+                    'centurion': {
+                        name: 'Centurion / Pretoria',
+                        emoji: '🚄',
+                        districts: [
+                            { name: 'Centurion', lat: -25.861, lng: 28.189, score: 6 },
+                            { name: 'Irene', lat: -25.882, lng: 28.217, score: 7 },
+                            { name: 'Midstream', lat: -25.906, lng: 28.191, score: 7 },
+                            { name: 'Highveld', lat: -25.889, lng: 28.172, score: 6 }
+                        ]
+                    }
+                }
+            }
+        };
+
+        // Application State
+        let map;
+        let markers = [];
+        let currentCity = 'cape-town';
+        let safeFilterEnabled = false;
+
+        // Initialize
+        function init() {
+            initMap();
+            setupEventListeners();
+            loadCity('cape-town');
+        }
+
+        // Map Initialization
+        function initMap() {
+            map = L.map('map').setView([cities['cape-town'].center[0], cities['cape-town'].center[1]], cities['cape-town'].zoom);
+
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '© OpenStreetMap | © CARTO',
+                maxZoom: 19,
+                className: 'map-tiles'
+            }).addTo(map);
+        }
+
+        // Get Safety Color
+        function getSafetyColor(score, threshold) {
+            if (score >= threshold) return '#22c55e';
+            if (score >= (threshold - 1)) return '#eab308';
+            return '#ef4444';
+        }
+
+        // Get Safety Label
+        function getSafetyLabel(score, threshold) {
+            if (score >= threshold) return '✓ Safe';
+            if (score >= (threshold - 1)) return '⚠ Moderate';
+            return '⚠ Caution';
+        }
+
+        // Load City
+        function loadCity(cityKey) {
+            currentCity = cityKey;
+            const cityData = cities[cityKey];
+
+            // Clear existing markers
+            markers.forEach(m => map.removeLayer(m));
+            markers = [];
+
+            // Recenter map
+            map.setView(cityData.center, cityData.zoom);
+
+            // Add markers for all districts
+            let visibleCount = 0;
+            for (const [regionKey, region] of Object.entries(cityData.regions)) {
+                region.districts.forEach(district => {
+                    const isSafe = district.score >= cityData.safeThreshold;
+                    const shouldShow = !safeFilterEnabled || isSafe;
+
+                    if (shouldShow) {
+                        visibleCount++;
+                    }
+
+                    const color = getSafetyColor(district.score, cityData.safeThreshold);
+                    const label = getSafetyLabel(district.score, cityData.safeThreshold);
+
+                    const marker = L.circleMarker([district.lat, district.lng], {
+                        radius: 8,
+                        fillColor: color,
+                        color: '#fff',
+                        weight: 2,
+                        opacity: shouldShow ? 1 : 0.3,
+                        fillOpacity: shouldShow ? 0.8 : 0.2,
+                        className: shouldShow ? '' : 'hidden-marker'
+                    }).addTo(map);
+
+                    const popupContent = `
+                        <div class="popup-content">
+                            <p><strong>${district.name}</strong></p>
+                            <p>Region: <strong>${region.name}</strong></p>
+                            <p>Score: <strong>${district.score}/10</strong></p>
+                            <div class="popup-safety" style="color: ${color};">
+                                ${label}
+                            </div>
+                        </div>
+                    `;
+
+                    marker.bindPopup(popupContent);
+                    marker.addEventListener('click', () => {
+                        highlightDistrict(regionKey, district.name);
+                    });
+
+                    markers.push(marker);
+                    marker.cityKey = cityKey;
+                    marker.regionKey = regionKey;
+                    marker.districtName = district.name;
+                    marker.shouldShow = shouldShow;
+                });
+            }
+
+            updatePanelContent();
+            updateDistrictCount();
+        }
+
+        // Update Panel Content
+        function updatePanelContent() {
+            const cityData = cities[currentCity];
+            const panelContent = document.getElementById('panelContent');
+            let html = '';
+
+            for (const [regionKey, region] of Object.entries(cityData.regions)) {
+                html += `<div class="region-group">
+                    <div class="region-header" data-region="${regionKey}">
+                        <span>${region.emoji} ${region.name}</span>
+                        <span class="region-toggle">▶</span>
+                    </div>
+                    <div class="region-districts">`;
+
+                region.districts.forEach(district => {
+                    const isSafe = district.score >= cityData.safeThreshold;
+                    const shouldShow = !safeFilterEnabled || isSafe;
+                    const color = getSafetyColor(district.score, cityData.safeThreshold);
+                    const label = getSafetyLabel(district.score, cityData.safeThreshold);
+
+                    const hiddenClass = shouldShow ? '' : 'hidden';
+                    html += `<div class="district-item ${hiddenClass}" data-district="${district.name}" data-region="${regionKey}">
+                        <span class="district-name">${district.name}</span>
+                        <span class="district-badge ${isSafe ? 'badge-safe' : (district.score >= (cityData.safeThreshold - 1) ? 'badge-moderate' : 'badge-unsafe')}">
+                            ${district.score}/10 • ${label}
+                        </span>
+                    </div>`;
+                });
+
+                html += `</div></div>`;
+            }
+
+            panelContent.innerHTML = html;
+
+            // Attach event listeners
+            document.querySelectorAll('.region-header').forEach(header => {
+                header.addEventListener('click', () => {
+                    header.classList.toggle('collapsed');
+                });
+            });
+
+            document.querySelectorAll('.district-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const regionKey = item.dataset.region;
+                    const districtName = item.dataset.district;
+                    highlightDistrict(regionKey, districtName);
+                });
+            });
+        }
+
+        // Highlight District
+        function highlightDistrict(regionKey, districtName) {
+            const district = cities[currentCity].regions[regionKey].districts.find(d => d.name === districtName);
+            if (district) {
+                map.setView([district.lat, district.lng], 13);
+
+                const marker = markers.find(m => m.districtName === districtName && m.regionKey === regionKey);
+                if (marker) {
+                    marker.openPopup();
+                }
+            }
+        }
+
+        // Update District Count
+        function updateDistrictCount() {
+            const cityData = cities[currentCity];
+            let count = 0;
+
+            for (const region of Object.values(cityData.regions)) {
+                for (const district of region.districts) {
+                    const isSafe = district.score >= cityData.safeThreshold;
+                    if (!safeFilterEnabled || isSafe) {
+                        count++;
+                    }
+                }
+            }
+
+            document.getElementById('districtCount').textContent = `${count} district${count !== 1 ? 's' : ''}`;
+        }
+
+        // Event Listeners
+        function setupEventListeners() {
+            // City Toggle
+            document.querySelectorAll('.city-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.city-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    loadCity(btn.dataset.city);
+                });
+            });
+
+            // Safe Filter
+            document.getElementById('safeFilter').addEventListener('change', (e) => {
+                safeFilterEnabled = e.target.checked;
+
+                // Update markers visibility
+                markers.forEach(marker => {
+                    const isSafe = marker.shouldShow && marker._latlng;
+                    const cityData = cities[marker.cityKey];
+                    const region = cityData.regions[marker.regionKey];
+                    const district = region.districts.find(d => d.name === marker.districtName);
+
+                    if (district) {
+                        const districtIsSafe = district.score >= cityData.safeThreshold;
+                        const shouldShow = !safeFilterEnabled || districtIsSafe;
+
+                        if (shouldShow) {
+                            marker.setOpacity(0.8);
+                            marker.setStyle({ weight: 2 });
+                        } else {
+                            marker.setOpacity(0.2);
+                            marker.setStyle({ weight: 1 });
+                        }
+                    }
+                });
+
+                // Update panel content
+                updatePanelContent();
+                updateDistrictCount();
+            });
+        }
+
+        // Start Application
+        init();
+    </script>
+</body>
+</html>
