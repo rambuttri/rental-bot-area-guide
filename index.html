@@ -16,17 +16,20 @@
         }
 
         :root {
-            --bg-dark: #1a1a2e;
-            --bg-card: #16213e;
-            --bg-hover: #0f3460;
-            --text-primary: #eaeaea;
-            --text-secondary: #b0b0b0;
-            --accent-primary: #00d4ff;
-            --accent-secondary: #ff006e;
-            --safe: #22c55e;
-            --moderate: #eab308;
-            --unsafe: #ef4444;
-            --border: #2a2a4e;
+            /* Light theme */
+            --bg-dark: #f8fafc;        /* page + inner list bg */
+            --bg-card: #ffffff;        /* panels, popups */
+            --bg-hover: #f1f5f9;       /* hover, region header */
+            --text-primary: #0f172a;   /* main text */
+            --text-secondary: #64748b; /* meta text */
+            --accent-primary: #0284c7; /* sky-600 */
+            --accent-secondary: #be185d;
+            --safe: #16a34a;           /* green-600 */
+            --moderate: #ca8a04;       /* amber-600 */
+            --unsafe: #dc2626;         /* red-600 */
+            --do-not-enter: #7f1d1d;   /* red-900 — "⛔ Do not enter" */
+            --guided-only: #7c3aed;    /* violet-600 — "🧑‍🏫 Guide only" */
+            --border: #e2e8f0;         /* slate-200 */
         }
 
         body {
@@ -103,7 +106,7 @@
 
         .city-btn.active {
             background: var(--accent-primary);
-            color: var(--bg-dark);
+            color: #ffffff;
         }
 
         .filter-toggle {
@@ -149,7 +152,7 @@
             background: var(--bg-card) !important;
             border: 1px solid var(--border) !important;
             border-radius: 8px !important;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
+            box-shadow: 0 8px 32px rgba(15, 23, 42, 0.12) !important;
         }
 
         .leaflet-popup-content {
@@ -188,7 +191,7 @@
         }
 
         .leaflet-control-attribution {
-            background: rgba(26, 26, 46, 0.8) !important;
+            background: rgba(255, 255, 255, 0.85) !important;
             color: var(--text-secondary) !important;
             border: 1px solid var(--border) !important;
         }
@@ -344,9 +347,34 @@
         }
 
         .badge-unsafe {
-            background: rgba(239, 68, 68, 0.2);
+            background: rgba(220, 38, 38, 0.12);
             color: var(--unsafe);
             border: 1px solid var(--unsafe);
+        }
+
+        .badge-do-not-enter {
+            background: rgba(127, 29, 29, 0.12);
+            color: var(--do-not-enter);
+            border: 1px solid var(--do-not-enter);
+            font-weight: 700;
+        }
+
+        .badge-guided {
+            background: rgba(124, 58, 237, 0.12);
+            color: var(--guided-only);
+            border: 1px solid var(--guided-only);
+            font-weight: 600;
+        }
+
+        .popup-note {
+            margin-top: 0.5rem;
+            padding: 0.5rem 0.6rem;
+            background: var(--bg-hover);
+            border-left: 3px solid var(--accent-primary);
+            border-radius: 4px;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            line-height: 1.4;
         }
 
         /* Legend */
@@ -506,15 +534,23 @@
                     <div class="legend-title">Safety Scale</div>
                     <div class="legend-item">
                         <div class="legend-color" style="background: var(--safe);"></div>
-                        <span>Safe (CT ≥6, JHB ≥5)</span>
+                        <span>Safe (score 7+)</span>
                     </div>
                     <div class="legend-item">
                         <div class="legend-color" style="background: var(--moderate);"></div>
-                        <span>Moderate (5-6 CT, 4 JHB)</span>
+                        <span>Moderate (5–6)</span>
                     </div>
                     <div class="legend-item">
                         <div class="legend-color" style="background: var(--unsafe);"></div>
-                        <span>Caution (CT <5, JHB <4)</span>
+                        <span>Caution (≤ 4)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: var(--do-not-enter);"></div>
+                        <span>⛔ Do not enter</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: var(--guided-only);"></div>
+                        <span>🧑‍🏫 Guided visits only</span>
                     </div>
                 </div>
             </div>
@@ -531,7 +567,6 @@
                 name: 'Cape Town',
                 center: [-33.9249, 18.4241],
                 zoom: 11,
-                safeThreshold: 6,
                 regions: {
                     'atlantic_seaboard': {
                         name: 'Atlantic Seaboard',
@@ -680,7 +715,6 @@
                 name: 'Johannesburg',
                 center: [-26.1445, 28.0416],
                 zoom: 11,
-                safeThreshold: 5,
                 regions: {
                     'sandton': {
                         name: 'Sandton',
@@ -851,6 +885,22 @@
                             { name: 'Midstream', lat: -25.906, lng: 28.191, score: 7 },
                             { name: 'Highveld', lat: -25.889, lng: 28.172, score: 6 }
                         ]
+                    },
+                    'special_advisories': {
+                        name: 'Special Advisories',
+                        emoji: '⚠️',
+                        districts: [
+                            {
+                                name: 'Alexandra',
+                                lat: -26.1030, lng: 28.1030,
+                                advisory: 'do_not_enter'
+                            },
+                            {
+                                name: 'Soweto',
+                                lat: -26.2678, lng: 27.8585,
+                                advisory: 'guided_only'
+                            }
+                        ]
                     }
                 }
             }
@@ -873,25 +923,69 @@
         function initMap() {
             map = L.map('map').setView([cities['cape-town'].center[0], cities['cape-town'].center[1]], cities['cape-town'].zoom);
 
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
                 attribution: '© OpenStreetMap | © CARTO',
                 maxZoom: 19,
                 className: 'map-tiles'
             }).addTo(map);
         }
 
+        // Unified safety thresholds (MUST match bot code in src/bot/telegram_bot.py):
+        //   Safe ≥7, Moderate 5-6, Caution ≤4
+        const SAFE_THRESHOLD = 7;
+        const MODERATE_THRESHOLD = 5;
+
+        // Special advisories override score-based classification.
+        const ADVISORY_META = {
+            do_not_enter: {
+                color: '#7f1d1d',
+                label: '⛔ Do not enter',
+                badgeClass: 'badge-do-not-enter',
+                note: 'Extreme risk — avoid at any time of day.',
+            },
+            guided_only: {
+                color: '#7c3aed',
+                label: '🧑‍🏫 Guided visits only',
+                badgeClass: 'badge-guided',
+                note: 'Interesting to visit, but never on your own — use a registered guide.',
+            },
+        };
+
         // Get Safety Color
-        function getSafetyColor(score, threshold) {
-            if (score >= threshold) return '#22c55e';
-            if (score >= (threshold - 1)) return '#eab308';
-            return '#ef4444';
+        function getSafetyColor(district) {
+            if (district.advisory && ADVISORY_META[district.advisory]) {
+                return ADVISORY_META[district.advisory].color;
+            }
+            if (district.score >= SAFE_THRESHOLD) return '#16a34a';
+            if (district.score >= MODERATE_THRESHOLD) return '#ca8a04';
+            return '#dc2626';
         }
 
         // Get Safety Label
-        function getSafetyLabel(score, threshold) {
-            if (score >= threshold) return '✓ Safe';
-            if (score >= (threshold - 1)) return '⚠ Moderate';
+        function getSafetyLabel(district) {
+            if (district.advisory && ADVISORY_META[district.advisory]) {
+                return ADVISORY_META[district.advisory].label;
+            }
+            if (district.score >= SAFE_THRESHOLD) return '✓ Safe';
+            if (district.score >= MODERATE_THRESHOLD) return '⚠ Moderate';
             return '⚠ Caution';
+        }
+
+        // Badge CSS class for side panel
+        function getBadgeClass(district) {
+            if (district.advisory && ADVISORY_META[district.advisory]) {
+                return ADVISORY_META[district.advisory].badgeClass;
+            }
+            if (district.score >= SAFE_THRESHOLD) return 'badge-safe';
+            if (district.score >= MODERATE_THRESHOLD) return 'badge-moderate';
+            return 'badge-unsafe';
+        }
+
+        // Is this district "safe" for the "Show safe only" filter?
+        // Advisory zones are NEVER safe, regardless of score.
+        function isSafe(district) {
+            if (district.advisory) return false;
+            return district.score >= SAFE_THRESHOLD;
         }
 
         // Load City
@@ -910,34 +1004,46 @@
             let visibleCount = 0;
             for (const [regionKey, region] of Object.entries(cityData.regions)) {
                 region.districts.forEach(district => {
-                    const isSafe = district.score >= cityData.safeThreshold;
-                    const shouldShow = !safeFilterEnabled || isSafe;
+                    const safe = isSafe(district);
+                    const shouldShow = !safeFilterEnabled || safe;
 
                     if (shouldShow) {
                         visibleCount++;
                     }
 
-                    const color = getSafetyColor(district.score, cityData.safeThreshold);
-                    const label = getSafetyLabel(district.score, cityData.safeThreshold);
+                    const color = getSafetyColor(district);
+                    const label = getSafetyLabel(district);
+                    const advisoryNote = district.advisory && ADVISORY_META[district.advisory]
+                        ? ADVISORY_META[district.advisory].note
+                        : null;
+                    // Advisory zones use a larger, more emphatic marker.
+                    const radius = district.advisory ? 11 : 8;
 
                     const marker = L.circleMarker([district.lat, district.lng], {
-                        radius: 8,
+                        radius,
                         fillColor: color,
-                        color: '#fff',
-                        weight: 2,
+                        color: district.advisory ? color : '#fff',
+                        weight: district.advisory ? 3 : 2,
                         opacity: shouldShow ? 1 : 0.3,
                         fillOpacity: shouldShow ? 0.8 : 0.2,
                         className: shouldShow ? '' : 'hidden-marker'
                     }).addTo(map);
 
+                    const scoreLine = district.advisory
+                        ? ''
+                        : `<p>Score: <strong>${district.score}/10</strong></p>`;
+                    const noteLine = advisoryNote
+                        ? `<p class="popup-note">${advisoryNote}</p>`
+                        : '';
                     const popupContent = `
                         <div class="popup-content">
                             <p><strong>${district.name}</strong></p>
                             <p>Region: <strong>${region.name}</strong></p>
-                            <p>Score: <strong>${district.score}/10</strong></p>
+                            ${scoreLine}
                             <div class="popup-safety" style="color: ${color};">
                                 ${label}
                             </div>
+                            ${noteLine}
                         </div>
                     `;
 
@@ -973,16 +1079,20 @@
                     <div class="region-districts">`;
 
                 region.districts.forEach(district => {
-                    const isSafe = district.score >= cityData.safeThreshold;
-                    const shouldShow = !safeFilterEnabled || isSafe;
-                    const color = getSafetyColor(district.score, cityData.safeThreshold);
-                    const label = getSafetyLabel(district.score, cityData.safeThreshold);
+                    const safe = isSafe(district);
+                    const shouldShow = !safeFilterEnabled || safe;
+                    const label = getSafetyLabel(district);
+                    const badgeClass = getBadgeClass(district);
 
                     const hiddenClass = shouldShow ? '' : 'hidden';
+                    // Advisory districts don't have a score shown — just the label.
+                    const badgeText = district.advisory
+                        ? label
+                        : `${district.score}/10 • ${label}`;
                     html += `<div class="district-item ${hiddenClass}" data-district="${district.name}" data-region="${regionKey}">
                         <span class="district-name">${district.name}</span>
-                        <span class="district-badge ${isSafe ? 'badge-safe' : (district.score >= (cityData.safeThreshold - 1) ? 'badge-moderate' : 'badge-unsafe')}">
-                            ${district.score}/10 • ${label}
+                        <span class="district-badge ${badgeClass}">
+                            ${badgeText}
                         </span>
                     </div>`;
                 });
@@ -1028,8 +1138,7 @@
 
             for (const region of Object.values(cityData.regions)) {
                 for (const district of region.districts) {
-                    const isSafe = district.score >= cityData.safeThreshold;
-                    if (!safeFilterEnabled || isSafe) {
+                    if (!safeFilterEnabled || isSafe(district)) {
                         count++;
                     }
                 }
@@ -1055,18 +1164,16 @@
 
                 // Update markers visibility
                 markers.forEach(marker => {
-                    const isSafe = marker.shouldShow && marker._latlng;
                     const cityData = cities[marker.cityKey];
                     const region = cityData.regions[marker.regionKey];
                     const district = region.districts.find(d => d.name === marker.districtName);
 
                     if (district) {
-                        const districtIsSafe = district.score >= cityData.safeThreshold;
-                        const shouldShow = !safeFilterEnabled || districtIsSafe;
+                        const shouldShow = !safeFilterEnabled || isSafe(district);
 
                         if (shouldShow) {
                             marker.setOpacity(0.8);
-                            marker.setStyle({ weight: 2 });
+                            marker.setStyle({ weight: district.advisory ? 3 : 2 });
                         } else {
                             marker.setOpacity(0.2);
                             marker.setStyle({ weight: 1 });

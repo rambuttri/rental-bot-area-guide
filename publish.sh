@@ -18,32 +18,44 @@ if [ ! -d .git ]; then
     git init -b main
     git add .
     git commit -m "Initial Area Guide"
+fi
 
-    # Try SSH first, fall back to HTTPS.
+# Ensure a remote exists.
+if ! git remote | grep -q '^origin$'; then
     if git ls-remote "$REPO_URL" &>/dev/null; then
         git remote add origin "$REPO_URL"
     else
         echo "▶ SSH not configured, using HTTPS. You'll be asked for GitHub credentials."
         git remote add origin "$REPO_URL_HTTPS"
     fi
-
-    git push -u origin main
-    echo ""
-    echo "✅ Pushed. Now enable Pages:"
-    echo "   https://github.com/rambuttri/rental-bot-area-guide/settings/pages"
-    echo "   Source = Deploy from a branch, Branch = main / root"
-    exit 0
 fi
 
-# Subsequent runs
-if git diff --quiet && git diff --cached --quiet; then
-    echo "Nothing to commit."
-    exit 0
-fi
-
+# Stage + commit any new changes (no-op if nothing changed).
 git add .
-git commit -m "Update area guide ($(date +%Y-%m-%d))"
-git push origin main
+if ! git diff --cached --quiet; then
+    git commit -m "Update area guide ($(date +%Y-%m-%d))"
+fi
+
+# Push. If remote repo doesn't exist yet, give a helpful message.
+if ! git push -u origin main 2>&1 | tee /tmp/publish-push.log; then
+    if grep -q "Repository not found" /tmp/publish-push.log; then
+        echo ""
+        echo "❌ GitHub repo not found yet."
+        echo "   1. Create it empty at: https://github.com/new"
+        echo "      Name: rental-bot-area-guide — Public — no README/license."
+        echo "   2. Re-run:  ./publish.sh"
+        exit 1
+    fi
+    exit 1
+fi
+
+echo ""
+echo "✅ Deployed — live in ~30s at:"
+echo "   https://rambuttri.github.io/rental-bot-area-guide/"
+echo ""
+echo "   First time? Enable Pages:"
+echo "   https://github.com/rambuttri/rental-bot-area-guide/settings/pages"
+echo "   Source = Deploy from a branch, Branch = main / root"
 echo ""
 echo "✅ Deployed — live in ~30s at:"
 echo "   https://rambuttri.github.io/rental-bot-area-guide/"
