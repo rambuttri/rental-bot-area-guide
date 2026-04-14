@@ -148,14 +148,6 @@
             min-height: 0;
         }
 
-        /* Graphite feel: darken base tile roads; dark_only_labels handles labels */
-        .map-tiles {
-            filter: saturate(0.85) contrast(1.15) brightness(0.92);
-        }
-        .map-labels {
-            filter: brightness(0.55) contrast(1.25);
-        }
-
         .leaflet-popup-content-wrapper {
             background: var(--bg-card) !important;
             border: 1px solid var(--border) !important;
@@ -905,7 +897,7 @@
                             },
                             {
                                 name: 'Soweto',
-                                lat: -26.2678, lng: 27.8585,
+                                lat: -26.2386, lng: 27.9082,
                                 advisory: 'guided_only'
                             }
                         ]
@@ -931,16 +923,10 @@
         function initMap() {
             map = L.map('map').setView([cities['cape-town'].center[0], cities['cape-town'].center[1]], cities['cape-town'].zoom);
 
-            // Light base (no labels) + dark-grey labels/roads overlay for a graphite feel.
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png', {
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
                 attribution: '© OpenStreetMap | © CARTO',
                 maxZoom: 19,
                 className: 'map-tiles'
-            }).addTo(map);
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png', {
-                maxZoom: 19,
-                pane: 'shadowPane',
-                className: 'map-labels'
             }).addTo(map);
         }
 
