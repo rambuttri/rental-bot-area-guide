@@ -288,7 +288,11 @@
 
         .region-districts {
             background: var(--bg-dark);
-            max-height: 500px;
+            /* 500px обрезал регионы с 9+ районами (City Bowl, Southern
+               Suburbs) — районы ниже лимита были не видны. 3000px хватает
+               на самый большой регион с запасом; используется только как
+               точка отсчёта transition при сворачивании. */
+            max-height: 3000px;
             overflow: hidden;
             transition: max-height 0.3s ease;
         }
