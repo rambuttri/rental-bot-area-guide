@@ -377,20 +377,52 @@
             line-height: 1.4;
         }
 
-        /* Legend */
-        .legend {
-            padding: 1rem 1.5rem;
+        /* Legend — collapsible accordion, collapsed by default.
+           Own classes (NOT .region-header): the global click handler is
+           re-attached to every .region-header on each render — a shared
+           class would double-toggle the legend. */
+        .legend-accordion {
             border-top: 1px solid var(--border);
-            background: var(--bg-hover);
             font-size: 0.85rem;
+            flex-shrink: 0;
         }
 
-        .legend-title {
+        .legend-header {
+            padding: 0.9rem 1.2rem;
+            background: var(--bg-hover);
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
             font-weight: 600;
-            margin-bottom: 0.6rem;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
+        }
+
+        .legend-header:hover {
+            background: #0f3460cc;
+        }
+
+        .legend-toggle {
+            transition: transform 0.3s ease;
+            font-size: 1.2rem;
+        }
+
+        .legend-header.collapsed .legend-toggle {
+            transform: rotate(90deg);
+        }
+
+        .legend-body {
+            background: var(--bg-dark);
+            max-height: 300px;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+            padding: 0.8rem 1.5rem;
+        }
+
+        .legend-header.collapsed ~ .legend-body {
+            max-height: 0;
+            padding-top: 0;
+            padding-bottom: 0;
         }
 
         .legend-item {
@@ -407,21 +439,43 @@
             border: 2px solid var(--text-primary);
         }
 
-        /* Mobile Responsive */
+        /* Mobile Responsive — вариант A (Pavel, 8 Jul 2026): страница
+           скроллится целиком как обычный сайт. Карта фиксированной высоты
+           45vh, список районов идёт обычным потоком БЕЗ внутреннего скролла
+           (раньше он был зажат в полоску между картой 60% и легендой). */
         @media (max-width: 1024px) {
+            body {
+                overflow: auto;
+            }
+
+            .container {
+                height: auto;
+                min-height: 100vh;
+            }
+
             .main-content {
                 flex-direction: column;
+                overflow: visible;
+                flex: none;
+            }
+
+            #map {
+                flex: none;
+                height: 45vh;
+                min-height: 280px;
             }
 
             .side-panel {
                 width: 100%;
-                height: 40%;
+                height: auto;
+                overflow: visible;
                 border-left: none;
                 border-top: 1px solid var(--border);
             }
 
-            #map {
-                height: 60%;
+            .panel-content {
+                flex: none;
+                overflow-y: visible;
             }
 
             .header-content {
@@ -468,8 +522,7 @@
                 font-size: 0.75rem;
             }
 
-            .legend {
-                padding: 0.8rem 1rem;
+            .legend-accordion {
                 font-size: 0.8rem;
             }
         }
@@ -530,27 +583,34 @@
                 <div class="panel-content" id="panelContent">
                     <div class="loading">Loading districts...</div>
                 </div>
-                <div class="legend">
-                    <div class="legend-title">Safety Scale</div>
-                    <div class="legend-item">
-                        <div class="legend-color" style="background: var(--safe);"></div>
-                        <span>Safe (score 7+)</span>
+                <!-- Safety Scale — collapsible accordion, collapsed by default
+                     (same pattern as region groups). Pavel, 8 Jul 2026. -->
+                <div class="legend-accordion">
+                    <div class="legend-header collapsed" onclick="this.classList.toggle('collapsed')">
+                        <span>🛡 Safety Scale</span>
+                        <span class="legend-toggle">▶</span>
                     </div>
-                    <div class="legend-item">
-                        <div class="legend-color" style="background: var(--moderate);"></div>
-                        <span>Moderate (5–6)</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color" style="background: var(--unsafe);"></div>
-                        <span>Caution (≤ 4)</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color" style="background: var(--do-not-enter);"></div>
-                        <span>⛔ Do not enter</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color" style="background: var(--guided-only);"></div>
-                        <span>🧑‍🏫 Guided visits only</span>
+                    <div class="legend-body">
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: var(--safe);"></div>
+                            <span>Safe (score 7+)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: var(--moderate);"></div>
+                            <span>Moderate (5–6)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: var(--unsafe);"></div>
+                            <span>Caution (≤ 4)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: var(--do-not-enter);"></div>
+                            <span>⛔ Do not enter</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: var(--guided-only);"></div>
+                            <span>🧑‍🏫 Guided visits only</span>
+                        </div>
                     </div>
                 </div>
             </div>
